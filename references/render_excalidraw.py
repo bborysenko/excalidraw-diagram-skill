@@ -13,9 +13,48 @@ First-time setup:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
+
+ESM_CACHE_DIR = Path(__file__).parent / ".esm-cache"
+
+
+def _serve_esm_from_cache(route) -> None:
+    """Answer a browser request to esm.sh from the disk cache, fetching it on a miss."""
+    url = route.request.url
+    key = hashlib.sha256(url.encode()).hexdigest()
+    body_path = ESM_CACHE_DIR / key
+    type_path = ESM_CACHE_DIR / f"{key}.type"
+    if not body_path.exists():
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (excalidraw-render)"})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                body = resp.read()
+                content_type = resp.headers.get("Content-Type", "application/javascript")
+        except urllib.error.HTTPError as e:
+            # Pass the error through without caching it, so the browser sees a normal failed request.
+            print(f"esm.sh {e.code}: {url}", file=sys.stderr)
+            route.fulfill(status=e.code, body=e.read() or b"")
+            return
+        except Exception as e:  # network problem: fail this request instead of hanging the page
+            print(f"esm.sh fetch failed ({e}): {url}", file=sys.stderr)
+            route.abort()
+            return
+        ESM_CACHE_DIR.mkdir(exist_ok=True)
+        body_path.write_bytes(body)
+        type_path.write_text(content_type)
+    route.fulfill(
+        status=200,
+        body=body_path.read_bytes(),
+        headers={
+            "Content-Type": type_path.read_text(),
+            "Access-Control-Allow-Origin": "*",
+        },
+    )
 
 
 def validate_excalidraw(data: dict) -> list[str]:
@@ -137,6 +176,11 @@ def render(
             device_scale_factor=scale,
         )
 
+        # Headless Chromium runs in its own sandbox and often can't reach esm.sh,
+        # even when this Python process can. Fetch esm.sh requests here instead,
+        # and cache them on disk so later renders work offline.
+        page.route("https://esm.sh/**", _serve_esm_from_cache)
+
         # Load the template
         page.goto(template_url)
 
@@ -163,7 +207,11 @@ def render(
             browser.close()
             sys.exit(1)
 
-        svg_el.screenshot(path=str(output_path))
+        if output_path.suffix.lower() == ".svg":
+            # Vector output: keeps text crisp and lets CSS restyle colors afterwards.
+            output_path.write_text(svg_el.evaluate("el => el.outerHTML"), encoding="utf-8")
+        else:
+            svg_el.screenshot(path=str(output_path))
         browser.close()
 
     return output_path
@@ -172,7 +220,7 @@ def render(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Render Excalidraw JSON to PNG")
     parser.add_argument("input", type=Path, help="Path to .excalidraw JSON file")
-    parser.add_argument("--output", "-o", type=Path, default=None, help="Output PNG path (default: same name with .png)")
+    parser.add_argument("--output", "-o", type=Path, default=None, help="Output path: .png (screenshot) or .svg (vector). Default: same name with .png")
     parser.add_argument("--scale", "-s", type=int, default=2, help="Device scale factor (default: 2)")
     parser.add_argument("--width", "-w", type=int, default=1920, help="Max viewport width (default: 1920)")
     args = parser.parse_args()

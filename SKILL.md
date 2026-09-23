@@ -15,6 +15,44 @@ Generate `.excalidraw` JSON files that **argue visually**, not just display info
 
 To make this skill produce diagrams in your own brand style, edit `color-palette.md`. Everything else in this file is universal design methodology and Excalidraw best practices.
 
+### Two styles
+
+| Style | When | Output |
+|-------|------|--------|
+| **Brand** (default) | Standalone diagrams, slides, docs with a fixed white background | PNG, colors from `color-palette.md` |
+| **Theme-aware** | Notes that must match Obsidian or GitHub light *and* dark mode, next to Mermaid rendered by beautiful-mermaid (for example the obsidian-beautiful-mermaid plugin) | SVG that recolors itself via `prefers-color-scheme` |
+
+A project's own instructions (CLAUDE.md) may pick the style. If nothing says which one, use Brand.
+
+### Theme-aware style
+
+It looks like beautiful-mermaid: flat, monochrome zinc palette, thin lines, square corners, sans-serif.
+
+- **Shapes:** `roughness: 0`, `strokeWidth: 1`, `roundness: null`, arrow `endArrowhead: "triangle"`. Use a dashed arrow for a loop back.
+- **Text:** `fontFamily: 2`, 14–15 px for node labels and 11–12 px for annotations.
+- **Colors:** don't use `color-palette.md`. Use these placeholder role colors instead; `theme_svg.py` replaces them with light and dark values:
+
+  | Placeholder | Role |
+  |-------------|------|
+  | `#010101` | Text |
+  | `#020202` | Muted text (annotations, secondary labels) |
+  | `#030303` | Structural lines |
+  | `#040404` | Arrows |
+  | `#050505` | Node fill |
+  | `#060606` | Node border |
+  | `#070707` | Accent (for example the highlighted bar) |
+  | `#080808` | Faint accent |
+
+- **Background:** `appState.viewBackgroundColor: "transparent"` and `appState.exportBackground: false`.
+- **Render:** export SVG, then theme it:
+  ```bash
+  cd .claude/skills/excalidraw-diagram/references
+  uv run python render_excalidraw.py NAME.excalidraw -o NAME.raw.svg
+  uv run python theme_svg.py NAME.raw.svg NAME.svg && rm NAME.raw.svg
+  ```
+- **Validate:** view the SVG in both schemes. For example, load it with Playwright `new_page(color_scheme="dark")` in an HTML page placed next to it, screenshot, and Read the PNG. Also render once to PNG (`-o NAME.png`) for the layout loop.
+- **Keep** the `.excalidraw` source next to the `.svg`. Edit the source and re-render; never hand-edit the SVG.
+
 ---
 
 ## Core Philosophy
@@ -454,7 +492,9 @@ You cannot judge a diagram from JSON alone. After generating or editing the Exca
 cd .claude/skills/excalidraw-diagram/references && uv run python render_excalidraw.py <path-to-file.excalidraw>
 ```
 
-This outputs a PNG next to the `.excalidraw` file. Then use the **Read tool** on the PNG to actually view it.
+This outputs a PNG next to the `.excalidraw` file. Then use the **Read tool** on the PNG to actually view it. Pass `-o file.svg` to get vector SVG instead (see Theme-aware style).
+
+The renderer pins `@excalidraw/excalidraw@0.18.0`, because 0.18.1 on esm.sh imports a 404 chunk (esm-dev/esm.sh#1370). It also fetches esm.sh modules from Python and caches them in `references/.esm-cache/`, since sandboxed headless Chromium often can't reach the network. Don't raise the timeout to fix a hang. Check the esm.sh URLs it prints on stderr instead.
 
 ### The Loop
 
