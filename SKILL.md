@@ -20,29 +20,42 @@ To make this skill produce diagrams in your own brand style, edit `color-palette
 | Style | When | Output |
 |-------|------|--------|
 | **Brand** (default) | Standalone diagrams, slides, docs with a fixed white background | PNG, colors from `color-palette.md` |
-| **Theme-aware** | Notes that must match Obsidian or GitHub light *and* dark mode, next to Mermaid rendered by beautiful-mermaid (for example the obsidian-beautiful-mermaid plugin) | SVG that recolors itself via `prefers-color-scheme` |
+| **Theme-aware** | Notes that must match Obsidian or GitHub light *and* dark mode | SVG that recolors itself via `prefers-color-scheme`, [Flexoki](https://stephango.com/flexoki) palette |
 
 A project's own instructions (CLAUDE.md) may pick the style. If nothing says which one, use Brand.
 
 ### Theme-aware style
 
-It looks like beautiful-mermaid: flat, monochrome zinc palette, thin lines, square corners, sans-serif.
+Flat and inky: the warm [Flexoki](https://stephango.com/flexoki) palette by Steph Ango (MIT), thin lines, square corners, sans-serif. Each role has its own light and dark value, picked for contrast rather than mixed from one gray, so muted text and lines stay readable in dark mode.
 
 - **Shapes:** `roughness: 0`, `strokeWidth: 1`, `roundness: null`, arrow `endArrowhead: "triangle"`. Use a dashed arrow for a loop back.
 - **Text:** `fontFamily: 2`, 14–15 px for node labels and 11–12 px for annotations.
-- **Colors:** don't use `color-palette.md`. Use these placeholder role colors instead; `theme_svg.py` replaces them with light and dark values:
+- **Colors:** don't use `color-palette.md`. Draw with the Flexoki *light* values below, so the `.excalidraw` source also looks right when opened in Excalidraw or Obsidian. `theme_svg.py` maps each one to a CSS variable with a light and a dark value:
 
-  | Placeholder | Role |
-  |-------------|------|
-  | `#010101` | Text |
-  | `#020202` | Muted text (annotations, secondary labels) |
-  | `#030303` | Structural lines |
-  | `#040404` | Arrows |
-  | `#050505` | Node fill |
-  | `#060606` | Node border |
-  | `#070707` | Accent (for example the highlighted bar) |
-  | `#080808` | Faint accent |
+  | Color in the source | Role | Light | Dark |
+  |---------------------|------|-------|------|
+  | `#100f0f` | Text | black | base-200 |
+  | `#6f6e69` | Muted text (annotations, secondary labels) | base-600 | base-400 |
+  | `#9f9d96` | Structural lines, neutral data bars | base-400 | base-600 |
+  | `#575653` | Arrows | base-700 | base-300 |
+  | `#e6e4d9` | Node fill | base-100 | base-850 |
+  | `#b7b5ac` | Node border | base-300 | base-700 |
 
+  Hues, strong tone (strokes, dots, colored text, data bars) / fill tone (bands, highlighted boxes; text on it stays `#100f0f`):
+
+  | Hue | Strong (600 → 400) | Fill (100 → 900) |
+  |-----|--------------------|------------------|
+  | red | `#af3029` | `#ffcabb` |
+  | orange | `#bc5215` | `#fed3af` |
+  | yellow | `#ad8301` | `#f6e2a0` |
+  | green | `#66800b` | `#dde2b2` |
+  | cyan | `#24837b` | `#bfe8d9` |
+  | blue | `#205ea6` | `#c6dde8` |
+  | purple | `#5e409d` | `#e2d9e9` |
+  | magenta | `#a02f6f` | `#fccfda` |
+
+  Any other color stays fixed in both modes, and `theme_svg.py` warns about it. The old placeholders (`#010101`–`#080808`) are still accepted.
+- **Color is meaning.** Most of the diagram stays in the base roles. Use a hue only when it encodes something, and keep one meaning per hue, for example green = success or cache hit, red = error, danger or miss, orange = write or warning. Two or three hues per diagram is plenty. A fill tone is too dark in dark mode for a data bar; use the strong tone or `#9f9d96` for bars.
 - **Background:** `appState.viewBackgroundColor: "transparent"` and `appState.exportBackground: false`.
 - **Render:** export SVG, then theme it:
   ```bash
