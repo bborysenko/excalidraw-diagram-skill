@@ -114,6 +114,8 @@ def main() -> None:
         f"@media (prefers-color-scheme: dark){{svg{{{palette(1)}}}}}"
         + " ".join(rules)
         + " text{font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif!important;font-weight:500}"
+        # fontFamily 3 (code) stays monospace
+        " text[font-family^='Cascadia']{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace!important;font-weight:400}"
         "</style>"
     )
     # Size the SVG at 1:1 with its viewBox (the export is at 2x), so it embeds at a natural size
