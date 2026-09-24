@@ -55,7 +55,7 @@ Flat and inky: the warm [Flexoki](https://stephango.com/flexoki) palette by Step
   | magenta | `#a02f6f` | `#fccfda` |
 
   Any other color stays fixed in both modes, and `theme_svg.py` warns about it. The old placeholders (`#010101`–`#080808`) are still accepted.
-- **Color is meaning.** Most of the diagram stays in the base roles. Use a hue only when it encodes something, and keep one meaning per hue, for example green = success or cache hit, red = error, danger or miss, orange = write or warning. Two or three hues per diagram is plenty. A fill tone is too dark in dark mode for a data bar; use the strong tone or `#9f9d96` for bars.
+- **Color is meaning.** Most of the diagram stays in the base roles. Use a hue only when it encodes something, and keep one meaning per hue, for example green = success or cache hit, red = error, danger or miss, orange = write, yellow = warning. Red and orange look alike in the light scheme, so never use them for two different meanings in one diagram. Don't rely on hue alone either: add a second cue (dashed vs solid, a fill band behind the affected lines, a word in the label). Two or three hues per diagram is plenty. A fill tone is too dark in dark mode for a data bar; use the strong tone or `#9f9d96` for bars.
 - **Background:** `appState.viewBackgroundColor: "transparent"` and `appState.exportBackground: false` in the source. `theme_svg.py` then adds its own themed background (Flexoki paper / black), so the SVG stays readable in full-screen viewers, on GitHub and in image viewers, where the surface behind it may not match the color scheme. Pass `--no-bg` to keep it transparent.
 - **Render:** export SVG, then theme it:
   ```bash
