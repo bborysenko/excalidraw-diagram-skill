@@ -56,7 +56,7 @@ Flat and inky: the warm [Flexoki](https://stephango.com/flexoki) palette by Step
 
   Any other color stays fixed in both modes, and `theme_svg.py` warns about it. The old placeholders (`#010101`–`#080808`) are still accepted.
 - **Color is meaning.** Most of the diagram stays in the base roles. Use a hue only when it encodes something, and keep one meaning per hue, for example green = success or cache hit, red = error, danger or miss, orange = write or warning. Two or three hues per diagram is plenty. A fill tone is too dark in dark mode for a data bar; use the strong tone or `#9f9d96` for bars.
-- **Background:** `appState.viewBackgroundColor: "transparent"` and `appState.exportBackground: false`.
+- **Background:** `appState.viewBackgroundColor: "transparent"` and `appState.exportBackground: false` in the source. `theme_svg.py` then adds its own themed background (Flexoki paper / black), so the SVG stays readable in full-screen viewers, on GitHub and in image viewers, where the surface behind it may not match the color scheme. Pass `--no-bg` to keep it transparent.
 - **Render:** export SVG, then theme it:
   ```bash
   cd .claude/skills/excalidraw-diagram/references

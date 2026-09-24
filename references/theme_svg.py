@@ -26,7 +26,8 @@ value the fill (bands, highlighted boxes; text on it stays black):
 
 Legacy placeholders (#010101..#080808) from the first version are still accepted.
 
-The background stays transparent. Values are chosen for contrast on both the
+The SVG gets an opaque background (paper / black) so it reads the same on any
+surface; pass --no-bg to keep it transparent. Values are chosen for contrast on both the
 Flexoki backgrounds and common app backgrounds (white, #1E1E1E): body and muted
 text >= 4.5:1, lines and arrows >= 2.5:1.
 """
@@ -68,6 +69,7 @@ def role(var: str, light: str, dark: str) -> None:
     ROLES[light.lower()] = (var, light, dark)
 
 
+BG = ("--d-bg", BASE["paper"], BASE["black"])  # page background, not a drawing role
 role("--d-text", BASE["black"], BASE["200"])
 role("--d-muted", BASE["600"], BASE["400"])
 role("--d-line", BASE["400"], BASE["600"])
@@ -88,7 +90,7 @@ LEGACY = {
 
 
 def palette(mode: int) -> str:
-    return "".join(f"{var}:{vals[mode]};" for var, *vals in ROLES.values())
+    return "".join(f"{var}:{vals[mode]};" for var, *vals in [*ROLES.values(), BG])
 
 
 def main() -> None:
@@ -123,9 +125,15 @@ def main() -> None:
     if vb:
         svg = re.sub(r'(<svg[^>]*?)\swidth="[\d.]+"', rf'\1 width="{vb.group(1)}"', svg, count=1)
         svg = re.sub(r'(<svg[^>]*?)\sheight="[\d.]+"', rf'\1 height="{vb.group(2)}"', svg, count=1)
-    # Drop a style block from an earlier theming run, then inject ours after <svg ...>
+    # Drop the style block and background from an earlier theming run
     svg = re.sub(r"(<svg[^>]*>)<style>.*?</style>", r"\1", svg, count=1, flags=re.S)
-    svg = re.sub(r"(<svg[^>]*>)", lambda m: m.group(1) + style, svg, count=1)
+    svg = re.sub(r'<rect id="d-bg"[^>]*/>', "", svg, count=1)
+    # Opaque themed background, so the diagram stays readable wherever it is shown
+    # (Obsidian's full-screen viewer, GitHub, image viewers). --no-bg keeps it transparent.
+    bg = ""
+    if vb and "--no-bg" not in sys.argv:
+        bg = f'<rect id="d-bg" x="0" y="0" width="{vb.group(1)}" height="{vb.group(2)}" style="fill:var(--d-bg)"/>'
+    svg = re.sub(r"(<svg[^>]*>)", lambda m: m.group(1) + style + bg, svg, count=1)
     dst.write_text(svg, encoding="utf-8")
     print(f"Themed SVG saved to {dst}")
 
